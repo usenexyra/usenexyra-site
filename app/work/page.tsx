@@ -7,8 +7,8 @@ import {
   useScroll,
   useTransform,
   AnimatePresence,
-  stagger,
   useAnimate,
+  type Variants,
 } from 'framer-motion'
 
 /* ─────────────────────────────────────────────────────────────────
@@ -283,36 +283,52 @@ const PROCESS_STEPS = [
 /* ─────────────────────────────────────────────────────────────────
    ANIMATION VARIANTS
 ───────────────────────────────────────────────────────────────── */
-const fadeUp = {
-  hidden:  { opacity: 0, y: 28 },
+const easeOutExpo: [number, number, number, number] = [0.23, 1, 0.32, 1]
+
+const fadeUp: Variants = {
+  hidden: { opacity: 0, y: 28 },
   visible: (delay = 0) => ({
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, delay, ease: [0.23, 1, 0.32, 1] },
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.75, delay, ease: easeOutExpo },
   }),
 }
 
-const fadeIn = {
-  hidden:  { opacity: 0 },
+const fadeIn: Variants = {
+  hidden: { opacity: 0 },
   visible: (delay = 0) => ({
     opacity: 1,
     transition: { duration: 0.6, delay },
   }),
 }
 
-const slideLeft = {
-  hidden:  { opacity: 0, x: -24 },
-  visible: (delay = 0) => ({
-    opacity: 1, x: 0,
-    transition: { duration: 0.7, delay, ease: [0.23, 1, 0.32, 1] },
-  }),
+const stagger: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09 } },
 }
 
-const scaleIn = {
-  hidden:  { opacity: 0, scale: 0.96 },
-  visible: (delay = 0) => ({
-    opacity: 1, scale: 1,
-    transition: { duration: 0.65, delay, ease: [0.23, 1, 0.32, 1] },
-  }),
+const cardReveal: Variants = {
+  hidden: { opacity: 0, y: 40 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: easeOutExpo },
+  },
+}
+
+const scaleIn: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 0.95,
+  },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.7,
+      ease: easeOutExpo,
+    },
+  },
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -562,7 +578,7 @@ export default function WorkPage() {
       <motion.nav
         initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+        transition={{ duration: 0.6, ease: easeOutExpo }}
         className={`fixed top-0 inset-x-0 z-[100] flex items-center justify-between px-8 md:px-16 py-6 backdrop-blur-xl transition-colors duration-300 ${
           scrolled ? 'border-b border-white/10' : 'border-b border-white/[0.07]'
         }`}
@@ -730,7 +746,7 @@ export default function WorkPage() {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              transition={{ duration: 0.4, ease: easeOutExpo }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border"
             >
               {filteredCases.length === 0 ? (
@@ -752,7 +768,7 @@ export default function WorkPage() {
                     href={`/work/${c.slug}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.55, delay: idx * 0.07, ease: [0.23, 1, 0.32, 1] }}
+                    transition={{ duration: 0.55, delay: idx * 0.07, ease: easeOutExpo }}
                     className="group flex flex-col bg-bg3 no-underline overflow-hidden border-0 outline-none"
                   >
                     {/* thumbnail */}
@@ -772,7 +788,7 @@ export default function WorkPage() {
                         className="absolute inset-0"
                         style={{ transformOrigin: 'center' }}
                         whileHover={{ scale: 1.04 }}
-                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+                        transition={{ duration: 0.6, ease: easeOutExpo }}
                       />
                     </div>
 
@@ -828,7 +844,7 @@ export default function WorkPage() {
                         <motion.span
                           className="text-muted group-hover:text-gold transition-colors duration-200 text-sm"
                           animate={{ x: 0 }}
-                          whileGroupHover={{ x: 4 }}
+                          whileHover={{ x: 4 }}
                         >
                           →
                         </motion.span>
@@ -1246,7 +1262,7 @@ export default function WorkPage() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.9, ease: [0.23, 1, 0.32, 1] }}
+            transition={{ duration: 0.9, ease: easeOutExpo }}
             className="font-cormorant font-light text-cta text-brand mb-6 max-w-4xl mx-auto"
           >
             Let&apos;s build your<br />
@@ -1257,7 +1273,7 @@ export default function WorkPage() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.23, 1, 0.32, 1] }}
+            transition={{ duration: 0.7, delay: 0.15, ease: easeOutExpo }}
             className="text-muted max-w-[500px] mx-auto mb-4 leading-[1.8] text-[1rem]"
           >
             The businesses in this portfolio all started with one decision — to stop improvising
@@ -1278,7 +1294,7 @@ export default function WorkPage() {
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            transition={{ duration: 0.7, delay: 0.3, ease: easeOutExpo }}
             className="flex justify-center gap-6 flex-wrap mb-24"
           >
             <BtnPrimary href="/contact">Book a Strategy Call →</BtnPrimary>
