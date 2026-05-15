@@ -7,31 +7,54 @@ import {
   useScroll,
   useTransform,
   AnimatePresence,
-  useMotionValue,
-  useSpring,
+  stagger,
+  useAnimate,
 } from 'framer-motion'
 
 /* ─────────────────────────────────────────────────────────────────
-   DESIGN TOKENS — gradient palettes for card thumbnails
+   TYPES
 ───────────────────────────────────────────────────────────────── */
-type Palette = 'gold' | 'blue' | 'green' | 'rose' | 'purple' | 'teal'
-
-const PALETTE_BG: Record<Palette, string> = {
-  gold:   'linear-gradient(135deg,#1a1208 0%,#2d1f0a 60%,#181005 100%)',
-  blue:   'linear-gradient(135deg,#080f1a 0%,#0a1a2d 60%,#04101a 100%)',
-  green:  'linear-gradient(135deg,#0a1a0a 0%,#0d2d12 60%,#051005 100%)',
-  rose:   'linear-gradient(135deg,#1a080d 0%,#2d0a14 60%,#120409 100%)',
-  purple: 'linear-gradient(135deg,#120a1a 0%,#1e0a2d 60%,#0d0514 100%)',
-  teal:   'linear-gradient(135deg,#081a18 0%,#0a2d28 60%,#041510 100%)',
+interface CaseStudy {
+  slug:     string
+  num:      string
+  category: string
+  title:    string
+  client:   string
+  industry: string
+  desc:     string
+  results:  { val: string; lbl: string }[]
+  tags:     string[]
+  gradient: 'gold' | 'blue' | 'green' | 'purple' | 'rose' | 'teal'
+  featured: boolean
 }
 
-const PALETTE_ACCENT: Record<Palette, string> = {
+interface Testimonial {
+  initials:  string
+  name:      string
+  role:      string
+  category:  string
+  quote:     string
+  stars:     number
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   GRADIENT TOKENS — matching blog/services visual language
+───────────────────────────────────────────────────────────────── */
+const GRAD_BG: Record<CaseStudy['gradient'], string> = {
+  gold:   'linear-gradient(135deg,#1a1208 0%,#2d1f0a 50%,#181005 100%)',
+  blue:   'linear-gradient(135deg,#080f1a 0%,#0a1a2d 50%,#04101a 100%)',
+  green:  'linear-gradient(135deg,#0d1a0a 0%,#0a2d12 50%,#051005 100%)',
+  purple: 'linear-gradient(135deg,#120a1a 0%,#1e0a2d 50%,#0d0510 100%)',
+  rose:   'linear-gradient(135deg,#1a080d 0%,#2d0a14 50%,#1a0509 100%)',
+  teal:   'linear-gradient(135deg,#081a18 0%,#0a2d28 50%,#041a18 100%)',
+}
+const GRAD_ACCENT: Record<CaseStudy['gradient'], string> = {
   gold:   'rgba(201,168,76,0.22)',
   blue:   'rgba(76,154,240,0.18)',
-  green:  'rgba(76,200,120,0.18)',
-  rose:   'rgba(240,76,110,0.18)',
-  purple: 'rgba(180,76,240,0.18)',
-  teal:   'rgba(76,220,200,0.18)',
+  green:  'rgba(76,175,125,0.18)',
+  purple: 'rgba(160,76,220,0.18)',
+  rose:   'rgba(220,76,100,0.18)',
+  teal:   'rgba(76,210,200,0.18)',
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -51,171 +74,209 @@ const MARQUEE_ITEMS = [
 ]
 
 const HERO_STATS = [
-  { val: '80', suffix: '+',  lbl: 'Projects delivered'      },
-  { val: '5',  suffix: '★',  lbl: 'Star client reviews'     },
-  { val: '12', suffix: '+',  lbl: 'Countries served'        },
-  { val: '4',  suffix: 'yr', lbl: 'Freelance experience'    },
+  { val: '80',   suffix: '+', lbl: 'Projects delivered'        },
+  { val: '5',    suffix: '★', lbl: 'Average client rating'     },
+  { val: '12',   suffix: '+', lbl: 'Countries served'          },
+  { val: '4',    suffix: '+', lbl: 'Years of execution'        },
 ] as const
 
-const CASE_STUDIES = [
+const CASE_STUDIES: CaseStudy[] = [
   {
-    id:       'real-estate-lead-funnel',
-    palette:  'gold' as Palette,
-    category: 'Real Estate · Lead Generation',
+    slug:     'real-estate-lead-funnel',
     num:      '01',
+    category: 'Lead Generation',
     title:    'Real Estate Lead Funnel System',
-    desc:     'Built a full-stack lead acquisition system for a regional real estate team — Facebook ads, IDX landing pages, AI SMS follow-up, and CRM pipeline automation. Eliminated Zillow dependency entirely.',
-    metrics:  [
-      { val: '68',   suffix: '+',  lbl: 'Qualified leads/month' },
-      { val: '3.2×', suffix: '',   lbl: 'Cost vs. portal leads'  },
-      { val: '82',   suffix: '%',  lbl: 'Lead response rate'    },
+    client:   'Regional Property Group',
+    industry: 'Real Estate',
+    desc:     'Built a full-funnel Facebook & Instagram lead acquisition system for a regional real estate team. Replaced expensive Zillow dependency with an owned pipeline delivering 50–70 qualified buyer and seller leads per month.',
+    results:  [
+      { val: '62',    lbl: 'Qualified leads/month' },
+      { val: '3.1×',  lbl: 'Cost vs. portal leads' },
+      { val: '78%',   lbl: 'Lead response rate'    },
     ],
-    tags: ['Facebook Ads', 'CRM Automation', 'Landing Pages'],
+    tags:     ['Meta Ads', 'Funnel Design', 'CRM Automation', 'Landing Pages'],
+    gradient: 'gold',
+    featured: true,
   },
   {
-    id:       'shopify-conversion-optimization',
-    palette:  'blue' as Palette,
-    category: 'eCommerce · Shopify',
+    slug:     'shopify-conversion-optimization',
     num:      '02',
-    title:    'Shopify Conversion Rate Overhaul',
-    desc:     'Redesigned product pages, checkout UX, and email flows for a Shopify brand averaging $80K/month. Data-driven CRO — heatmaps, session recordings, A/B tests — resulted in meaningful revenue uplift without increasing ad spend.',
-    metrics:  [
-      { val: '2.8×', suffix: '', lbl: 'Conversion rate increase' },
-      { val: '41',   suffix: '%', lbl: 'Cart abandonment reduction' },
-      { val: '$28K', suffix: '+', lbl: 'Additional monthly revenue' },
+    category: 'eCommerce Growth',
+    title:    'Shopify Conversion Optimization',
+    client:   'DTC Lifestyle Brand',
+    industry: 'eCommerce',
+    desc:     'Audited a Shopify store generating $80K/month with a 1.2% conversion rate. Rebuilt product pages, checkout flow, and mobile UX. Implemented post-purchase upsell sequences and abandoned cart automation.',
+    results:  [
+      { val: '2.8%',  lbl: 'Conversion rate (was 1.2%)' },
+      { val: '+$42K', lbl: 'Monthly revenue lift'       },
+      { val: '31%',   lbl: 'Cart abandonment reduction' },
     ],
-    tags: ['CRO', 'Shopify', 'Email Flows', 'UX Design'],
+    tags:     ['Shopify CRO', 'UX Audit', 'Email Flows', 'A/B Testing'],
+    gradient: 'blue',
+    featured: true,
   },
   {
-    id:       'google-ads-roofing',
-    palette:  'green' as Palette,
-    category: 'Local Services · Google Ads',
+    slug:     'google-ads-local-roofing',
     num:      '03',
-    title:    'Google Ads — Local Roofing Company',
-    desc:     'Rebuilt a failing Google Ads account for a roofing contractor spending $4K/month with zero tracked conversions. Introduced a proper keyword architecture, dedicated service landing pages, and call/form conversion tracking.',
-    metrics:  [
-      { val: '63',   suffix: '%', lbl: 'CPL reduction'        },
-      { val: '3×',   suffix: '',  lbl: 'Lead volume increase'  },
-      { val: '14',   suffix: 'd', lbl: 'First leads arrived'   },
+    category: 'Google Ads',
+    title:    'Google Ads for Local Roofing Company',
+    client:   'Metro Roofing Solutions',
+    industry: 'Home Services',
+    desc:     'Rebuilt a Google Ads account burning $8K/month with no call tracking and broad match keywords everywhere. Restructured campaign architecture, added negative keyword discipline, and launched dedicated landing pages per service area.',
+    results:  [
+      { val: '65%',  lbl: 'Cost-per-lead reduction' },
+      { val: '2.9×', lbl: 'Lead volume increase'    },
+      { val: '14d',  lbl: 'Time to first results'   },
     ],
-    tags: ['Google Ads', 'Landing Pages', 'Conversion Tracking'],
+    tags:     ['Google Ads', 'Landing Pages', 'Call Tracking', 'Local SEO'],
+    gradient: 'rose',
+    featured: true,
   },
   {
-    id:       'ai-follow-up-automation',
-    palette:  'purple' as Palette,
-    category: 'AI Automation · CRM',
+    slug:     'ai-follow-up-automation',
     num:      '04',
+    category: 'AI Automation',
     title:    'AI Follow-Up Automation System',
-    desc:     'Designed and deployed a GPT-powered lead qualification and follow-up system using Make.com and a CRM webhook stack. Leads receive instant SMS/email responses, automated qualification sequences, and calendar booking links — no manual input required.',
-    metrics:  [
-      { val: '5',    suffix: 'min', lbl: 'Avg. lead response time' },
-      { val: '22',   suffix: 'hr', lbl: 'Saved per team/week'     },
-      { val: '3.6×', suffix: '',   lbl: 'Pipeline throughput'     },
+    client:   'Consulting & Coaching Firm',
+    industry: 'Professional Services',
+    desc:     'Designed and deployed a GPT-powered lead follow-up system using Make.com and Go High Level. Intake forms trigger qualification sequences via email, SMS, and WhatsApp — all without manual input from the sales team.',
+    results:  [
+      { val: '5min',  lbl: 'Avg. lead response time'  },
+      { val: '22hrs', lbl: 'Saved per team per week'  },
+      { val: '3.6×',  lbl: 'Pipeline throughput lift' },
     ],
-    tags: ['GPT API', 'Make.com', 'CRM Workflows', 'SMS Automation'],
+    tags:     ['GPT API', 'Make.com', 'GHL CRM', 'SMS / WhatsApp'],
+    gradient: 'purple',
+    featured: false,
   },
   {
-    id:       'tiktok-ads-scaling',
-    palette:  'rose' as Palette,
-    category: 'eCommerce · Paid Social',
+    slug:     'tiktok-ads-scaling',
     num:      '05',
+    category: 'Paid Social',
     title:    'TikTok Ads Scaling Campaign',
-    desc:     'Managed a TikTok Ads account for a DTC beauty brand from $5K/month to $40K/month over 90 days. Built creative briefs, UGC frameworks, and a creative testing cadence that maintained ROAS through aggressive scaling.',
-    metrics:  [
-      { val: '8×',   suffix: '',  lbl: 'Ad spend scaled'         },
-      { val: '4.1',  suffix: '×', lbl: 'ROAS maintained'         },
-      { val: '60',   suffix: '+', lbl: 'Creatives tested'        },
+    client:   'Beauty & Wellness Brand',
+    industry: 'eCommerce',
+    desc:     'Scaled a TikTok Ads account from $1,500/month to $18,000/month over 90 days. Built a creative testing framework — 3 new videos per week — and layered in Spark Ads with high-performing organic content to keep CPM low.',
+    results:  [
+      { val: '12×',   lbl: 'Ad spend scaled'          },
+      { val: '4.2×',  lbl: 'Blended ROAS maintained'  },
+      { val: '38%',   lbl: 'CPM reduction vs. cold'   },
     ],
-    tags: ['TikTok Ads', 'DTC', 'Creative Strategy', 'UGC'],
+    tags:     ['TikTok Ads', 'Creative Strategy', 'Spark Ads', 'Scaling'],
+    gradient: 'teal',
+    featured: false,
   },
   {
-    id:       'multi-channel-lead-gen',
-    palette:  'teal' as Palette,
-    category: 'Local Services · Lead Generation',
+    slug:     'multi-channel-lead-gen-dashboard',
     num:      '06',
+    category: 'Lead Generation',
     title:    'Multi-Channel Lead Gen Dashboard',
-    desc:     'Built a unified lead generation and attribution system for a multi-location HVAC business. Google Ads, Facebook Ads, and SEO data funneled into a single reporting dashboard with cost-per-lead tracking by channel, location, and service type.',
-    metrics:  [
-      { val: '4',    suffix: '+', lbl: 'Channels unified'         },
-      { val: '47',   suffix: '%', lbl: 'Avg. CPL drop'           },
-      { val: '110',  suffix: '+', lbl: 'Monthly leads at peak'   },
+    client:   'HVAC & Plumbing Group',
+    industry: 'Home Services',
+    desc:     'Built a unified lead generation system across Google Ads, Facebook Ads, and Local SEO for a multi-location home services group. All leads flow into a central CRM with source attribution, quality scoring, and automated dispatcher routing.',
+    results:  [
+      { val: '140+',  lbl: 'Leads per month'          },
+      { val: '48%',   lbl: 'Lower cost-per-booking'   },
+      { val: '100%',  lbl: 'Attribution coverage'     },
     ],
-    tags: ['Google Ads', 'Facebook Ads', 'SEO', 'Analytics'],
+    tags:     ['Google Ads', 'Meta Ads', 'Local SEO', 'CRM Integration'],
+    gradient: 'green',
+    featured: false,
   },
-] as const
+]
 
-const TESTIMONIALS = [
+const TESTIMONIALS: Testimonial[] = [
   {
     initials: 'MR',
     name:     'Michael R.',
-    role:     'Real Estate Team Lead',
-    category: 'Lead Generation',
-    rating:   5,
-    text:     'Towhid is a hard worker, diligent, thorough, precise, polite and easy to communicate with. I absolutely recommend him. The systems he built for us replaced three separate vendors — and performed better than all of them combined.',
-    palette:  'gold' as Palette,
+    role:     'Property Investment Director',
+    category: 'Real Estate Lead Generation',
+    quote:    'Towhid is a hard worker, diligent, thorough, precise, polite and easy to communicate with. I absolutely recommend him.',
+    stars:    5,
   },
   {
     initials: 'SL',
     name:     'Sophie L.',
-    role:     'eCommerce Brand Owner',
-    category: 'Shopify & Meta Ads',
-    rating:   5,
-    text:     'Easy to work with and eager to get results. He took our Shopify store from stagnant to scaling in under 60 days. The attention to detail on the CRO work was impressive — every decision was backed by real data.',
-    palette:  'blue' as Palette,
+    role:     'eCommerce Brand Founder',
+    category: 'Shopify Growth & Meta Ads',
+    quote:    'Completed the task successfully. Very proactive, appreciate the effort. The results came faster than I expected.',
+    stars:    5,
   },
   {
-    initials: 'JW',
-    name:     'James W.',
-    role:     'Roofing Company Director',
-    category: 'Google Ads',
-    rating:   5,
-    text:     'Great work ethic. Our Google Ads were bleeding money before Towhid rebuilt the account. Within 3 weeks we had our first properly attributed leads. Cost per lead dropped by more than half. Would not hesitate to recommend.',
-    palette:  'green' as Palette,
+    initials: 'JT',
+    name:     'James T.',
+    role:     'Roofing Company Owner',
+    category: 'Google Ads Management',
+    quote:    'Towhid has an excellent work ethic and is very motivated. Lead volume doubled within the first month. Highly recommend.',
+    stars:    5,
   },
   {
-    initials: 'AR',
-    name:     'Amir R.',
-    role:     'Agency Founder',
-    category: 'AI Automation',
-    rating:   5,
-    text:     'Towhid has an excellent work ethic and is very motivated. The automation workflows he built are genuinely game-changing — our team saves 20+ hours per week. What would have taken us months to build internally was delivered in 2 weeks.',
-    palette:  'purple' as Palette,
+    initials: 'AC',
+    name:     'Alex C.',
+    role:     'Consulting Agency CEO',
+    category: 'AI Automation & CRM',
+    quote:    'Easy to work with and eager to deliver. The automation system he built has saved our team hours every single week.',
+    stars:    5,
   },
   {
-    initials: 'CT',
-    name:     'Clara T.',
-    role:     'Marketing Director',
-    category: 'Lead Generation',
-    rating:   5,
-    text:     'Completed the task successfully. Very proactive — I appreciate the effort. He flagged issues I hadn\'t even considered, fixed them proactively, and delivered more than the brief asked for. The kind of freelancer you want on long-term retainer.',
-    palette:  'teal' as Palette,
+    initials: 'DK',
+    name:     'Dana K.',
+    role:     'Marketing Manager',
+    category: 'Paid Social Campaigns',
+    quote:    'Great work ethic. Delivered exactly what was promised and communicated throughout. Will work with again.',
+    stars:    5,
   },
-] as const
+]
 
 const PROCESS_STEPS = [
   {
     num:   '01',
-    word:  'Strategy',
-    desc:  'Revenue audit, channel analysis, competitor intelligence. We identify exactly where the growth levers are before writing a single ad or touching your code.',
-    accent: 'Clarity before action.',
+    title: 'Strategy',
+    desc:  'Every engagement starts with a revenue audit. We map your current state, identify the highest-leverage opportunities, and build a 90-day roadmap before a single dollar is spent.',
+    icon: (
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth={1.4} className="w-8 h-8 text-gold">
+        <path d="M6 30 L16 20 L22 26 L30 14 L36 20" />
+        <circle cx="36" cy="8" r="3.5" />
+        <path d="M6 36 h28" />
+      </svg>
+    ),
   },
   {
     num:   '02',
-    word:  'Build',
-    desc:  'Campaigns launched, websites deployed, automations activated. Most clients are live within 14–18 days of onboarding — fast without cutting corners.',
-    accent: 'Speed without shortcuts.',
+    title: 'Build',
+    desc:  'Campaigns go live. Sites are deployed. Automation workflows are activated. Most clients see their first results within 14–18 days of engagement start.',
+    icon: (
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth={1.4} className="w-8 h-8 text-gold">
+        <rect x="4" y="8" width="32" height="22" rx="2" />
+        <path d="M12 16 h6 M12 22 h10 M12 12 h16" />
+        <path d="M14 30 L12 36 M26 30 L28 36 M10 36 h20" />
+      </svg>
+    ),
   },
   {
     num:   '03',
-    word:  'Automate',
-    desc:  'AI-powered follow-up, CRM workflows, reporting pipelines. Every manual touchpoint that slows down revenue gets systematised and accelerated.',
-    accent: 'Systems that scale with you.',
+    title: 'Automate',
+    desc:  'AI systems, CRM workflows, and follow-up sequences take manual work off your team\'s plate. The system works around the clock — nights, weekends, and holidays.',
+    icon: (
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth={1.4} className="w-8 h-8 text-gold">
+        <circle cx="20" cy="12" r="5" />
+        <circle cx="8" cy="28" r="4" />
+        <circle cx="32" cy="28" r="4" />
+        <path d="M17 16 L11 25 M23 16 L29 25 M12 28 h16" />
+      </svg>
+    ),
   },
   {
     num:   '04',
-    word:  'Scale',
-    desc:  'Weekly iteration cycles, A/B testing, budget reallocation based on real attribution data. Performance compounds — month after month.',
-    accent: 'Compounding returns.',
+    title: 'Scale',
+    desc:  'Weekly data reviews, A/B tests, budget reallocation, and compounding optimisation. Results improve month after month — not plateau after month two.',
+    icon: (
+      <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth={1.4} className="w-8 h-8 text-gold">
+        <path d="M6 34 L14 22 L22 28 L32 12" />
+        <path d="M28 12 h4 v4" />
+        <path d="M6 6 v28 h28" />
+      </svg>
+    ),
   },
 ] as const
 
@@ -226,7 +287,7 @@ const fadeUp = {
   hidden:  { opacity: 0, y: 28 },
   visible: (delay = 0) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.75, delay, ease: [0.23, 1, 0.32, 1] },
+    transition: { duration: 0.7, delay, ease: [0.23, 1, 0.32, 1] },
   }),
 }
 
@@ -238,21 +299,24 @@ const fadeIn = {
   }),
 }
 
-const stagger = {
-  hidden:  {},
-  visible: { transition: { staggerChildren: 0.09 } },
+const slideLeft = {
+  hidden:  { opacity: 0, x: -24 },
+  visible: (delay = 0) => ({
+    opacity: 1, x: 0,
+    transition: { duration: 0.7, delay, ease: [0.23, 1, 0.32, 1] },
+  }),
 }
 
-const cardReveal = {
-  hidden:  { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.7, ease: [0.23, 1, 0.32, 1] },
-  },
+const scaleIn = {
+  hidden:  { opacity: 0, scale: 0.96 },
+  visible: (delay = 0) => ({
+    opacity: 1, scale: 1,
+    transition: { duration: 0.65, delay, ease: [0.23, 1, 0.32, 1] },
+  }),
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   SHARED UI COMPONENTS — exact signatures as all other Nexyra pages
+   SMALL REUSABLE COMPONENTS
 ───────────────────────────────────────────────────────────────── */
 function SectionLabel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return <p className={`section-label ${className}`}>{children}</p>
@@ -268,12 +332,14 @@ function SectionTitle({ children, className = '' }: { children: React.ReactNode;
 
 function BtnPrimary({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a
+    <motion.a
       href={href}
-      className="btn-primary inline-flex items-center gap-3 font-mono text-[0.75rem] tracking-[0.12em] uppercase text-bg bg-gold px-10 py-4 no-underline transition-transform hover:-translate-y-0.5"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.2 }}
+      className="btn-primary inline-flex items-center gap-3 font-mono text-[0.75rem] tracking-[0.12em] uppercase text-bg bg-gold px-10 py-4 no-underline"
     >
       {children}
-    </a>
+    </motion.a>
   )
 }
 
@@ -288,28 +354,63 @@ function BtnGhost({ href, children }: { href: string; children: React.ReactNode 
   )
 }
 
-/* ── Gradient thumbnail with diagonal pattern ── */
-function CardThumb({
-  palette,
-  height = 'h-56',
-  children,
-}: {
-  palette: Palette
-  height?: string
-  children?: React.ReactNode
-}) {
-  const accent = PALETTE_ACCENT[palette]
+/* Animated counter hook */
+function useCounter(target: number, duration = 1800) {
+  const [count, setCount]   = useState(0)
+  const [started, setStart] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const inView = useInView(ref, { once: true, margin: '-60px' })
+
+  useEffect(() => {
+    if (!inView || started) return
+    setStart(true)
+    const start = performance.now()
+    const tick  = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setCount(Math.round(eased * target))
+      if (progress < 1) requestAnimationFrame(tick)
+    }
+    requestAnimationFrame(tick)
+  }, [inView, started, target, duration])
+
+  return { ref, count }
+}
+
+/* Stat counter component */
+function AnimatedStat({ val, suffix, lbl }: { val: string; suffix: string; lbl: string }) {
+  const numeric = parseInt(val.replace(/\D/g, ''))
+  const { ref, count } = useCounter(numeric)
   return (
-    <div className={`relative overflow-hidden ${height} flex-shrink-0`}>
-      <motion.div
-        className="absolute inset-0"
-        style={{ background: PALETTE_BG[palette] }}
-        whileHover={{ scale: 1.04 }}
-        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-      />
+    <div ref={ref} className="text-center md:text-left">
+      <div className="font-cormorant font-light text-[2.8rem] text-brand leading-none mb-1">
+        {count}<span className="text-gold">{suffix}</span>
+      </div>
+      <div className="font-mono text-[0.62rem] tracking-[0.15em] uppercase text-muted">{lbl}</div>
+    </div>
+  )
+}
+
+/* Card thumbnail placeholder */
+function CaseThumbnail({
+  gradient,
+  category,
+  num,
+  featured = false,
+}: {
+  gradient: CaseStudy['gradient']
+  category: string
+  num: string
+  featured?: boolean
+}) {
+  const accent = GRAD_ACCENT[gradient]
+  return (
+    <div className="absolute inset-0">
+      {/* base gradient */}
+      <div className="absolute inset-0" style={{ background: GRAD_BG[gradient] }} />
       {/* diagonal rule */}
       <div
-        className="absolute inset-0 opacity-[0.28]"
+        className="absolute inset-0 opacity-25"
         style={{
           backgroundImage: `repeating-linear-gradient(
             45deg,transparent,transparent 24px,
@@ -317,64 +418,72 @@ function CardThumb({
           )`,
         }}
       />
-      {/* corner glow */}
+      {/* corner radial glow */}
       <div
-        className="absolute -top-12 -right-12 w-48 h-48 rounded-full opacity-40"
+        className="absolute -top-12 -right-12 w-56 h-56 rounded-full opacity-40"
         style={{ background: `radial-gradient(circle,${accent} 0%,transparent 70%)` }}
       />
+      {/* bottom glow */}
       <div
-        className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full opacity-20"
+        className="absolute -bottom-8 -left-8 w-40 h-40 rounded-full opacity-25"
         style={{ background: `radial-gradient(circle,${accent} 0%,transparent 70%)` }}
       />
-      {children}
+      {/* mock UI lines */}
+      <div className="absolute bottom-8 left-8 right-8 flex flex-col gap-2 opacity-30">
+        <div className="h-1 rounded-sm bg-white/20" style={{ width: '55%' }} />
+        <div className="h-1 rounded-sm bg-white/20" style={{ width: '80%' }} />
+        <div className="h-1 rounded-sm bg-white/20" style={{ width: '40%' }} />
+      </div>
+      {/* number watermark */}
+      <div className="absolute top-6 right-6 font-cormorant text-[4rem] font-light leading-none text-white/[0.05]">
+        {num}
+      </div>
+      {/* badges */}
+      <div className="absolute top-5 left-5 flex items-center gap-2 z-10">
+        {featured && (
+          <span className="font-mono text-[0.58rem] tracking-[0.18em] uppercase text-bg bg-gold px-3 py-1.5 leading-none">
+            Featured
+          </span>
+        )}
+        <span className="font-mono text-[0.58rem] tracking-[0.14em] uppercase text-muted border border-white/15 px-3 py-1.5 bg-black/50 backdrop-blur-sm leading-none">
+          {category}
+        </span>
+      </div>
     </div>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   ANIMATED COUNTER
+   SECTION WRAPPERS WITH SCROLL REVEAL
 ───────────────────────────────────────────────────────────────── */
-function AnimatedStat({ val, suffix, lbl }: { val: string; suffix: string; lbl: string }) {
-  const ref = useRef<HTMLDivElement>(null)
-  const inView = useInView(ref, { once: true, margin: '-60px' })
-  const numericVal = parseInt(val.replace(/\D/g, ''), 10)
-  const isNumeric  = !isNaN(numericVal) && val.match(/^\d/)
-
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    if (!inView || !isNumeric) return
-    const duration = 1400
-    const start    = performance.now()
-    const end      = numericVal
-    const raf = (ts: number) => {
-      const progress = Math.min((ts - start) / duration, 1)
-      const eased    = 1 - Math.pow(1 - progress, 3)
-      setCount(Math.round(eased * end))
-      if (progress < 1) requestAnimationFrame(raf)
-    }
-    requestAnimationFrame(raf)
-  }, [inView, isNumeric, numericVal])
+function RevealSection({
+  children,
+  className = '',
+  delay = 0,
+}: {
+  children: React.ReactNode
+  className?: string
+  delay?: number
+}) {
+  const ref     = useRef<HTMLDivElement>(null)
+  const inView  = useInView(ref, { once: true, margin: '-80px' })
 
   return (
     <motion.div
       ref={ref}
-      variants={fadeUp}
-      custom={0}
       initial="hidden"
       animate={inView ? 'visible' : 'hidden'}
+      variants={fadeUp}
+      custom={delay}
+      className={className}
     >
-      <div className="font-cormorant font-light text-[2.8rem] text-brand leading-none mb-1">
-        {isNumeric ? count : val}
-        <span className="text-gold">{suffix}</span>
-      </div>
-      <div className="font-mono text-[0.62rem] tracking-[0.15em] uppercase text-muted">{lbl}</div>
+      {children}
     </motion.div>
   )
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   HOOKS
+   CURSOR HOOK
 ───────────────────────────────────────────────────────────────── */
 function useCursor() {
   const cursorRef = useRef<HTMLDivElement>(null)
@@ -412,6 +521,12 @@ function useCursor() {
 export default function WorkPage() {
   const { cursorRef, trailRef } = useCursor()
   const [scrolled, setScrolled] = useState(false)
+  const [activeFilter, setActiveFilter] = useState('All')
+
+  const heroRef   = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
+  const heroY     = useTransform(scrollYProgress, [0, 1], [0, 60])
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 50)
@@ -419,10 +534,13 @@ export default function WorkPage() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  /* parallax ref for hero */
-  const heroRef  = useRef<HTMLElement>(null)
-  const { scrollYProgress: heroProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
-  const heroY = useTransform(heroProgress, [0, 1], ['0%', '20%'])
+  const filters = ['All', 'Featured', 'Lead Generation', 'eCommerce Growth', 'Google Ads', 'AI Automation', 'Paid Social']
+
+  const filteredCases = CASE_STUDIES.filter(c => {
+    if (activeFilter === 'All') return true
+    if (activeFilter === 'Featured') return c.featured
+    return c.category === activeFilter
+  })
 
   return (
     <>
@@ -430,6 +548,7 @@ export default function WorkPage() {
       <div
         ref={cursorRef}
         className="fixed pointer-events-none z-[9999] w-3 h-3 rounded-full border border-gold mix-blend-difference"
+        style={{ transition: 'opacity 0.2s' }}
       />
       <div
         ref={trailRef}
@@ -441,7 +560,7 @@ export default function WorkPage() {
           NAV
       ══════════════════════════════════════════════════════════ */}
       <motion.nav
-        initial={{ opacity: 0, y: -16 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
         className={`fixed top-0 inset-x-0 z-[100] flex items-center justify-between px-8 md:px-16 py-6 backdrop-blur-xl transition-colors duration-300 ${
@@ -452,7 +571,6 @@ export default function WorkPage() {
         <a href="/" className="font-cormorant text-[1.4rem] font-semibold tracking-[0.02em] text-brand no-underline">
           Nexyra<span className="text-gold">.</span>
         </a>
-
         <ul className="hidden md:flex gap-10 list-none">
           {NAV_LINKS.map(l => (
             <li key={l.label}>
@@ -467,7 +585,6 @@ export default function WorkPage() {
             </li>
           ))}
         </ul>
-
         <a
           href="/contact"
           className="font-mono text-[0.72rem] tracking-[0.1em] uppercase text-bg bg-gold px-6 py-2.5 no-underline hover:bg-gold2 transition-all hover:-translate-y-px"
@@ -479,72 +596,65 @@ export default function WorkPage() {
       {/* ══════════════════════════════════════════════════════════
           HERO
       ══════════════════════════════════════════════════════════ */}
-      <section ref={heroRef} className="relative overflow-hidden px-8 md:px-16 pt-40 pb-24 min-h-[90vh] flex flex-col justify-end">
-        {/* parallax atmospheric background */}
-        <motion.div
+      <section ref={heroRef} className="relative overflow-hidden px-8 md:px-16 pt-44 pb-28 min-h-[90vh] flex flex-col justify-end">
+        {/* layered atmospheric bg */}
+        <div
           className="absolute inset-0"
           style={{
-            y: heroY,
             background: [
-              'radial-gradient(ellipse 60% 60% at 72% 18%,rgba(201,168,76,0.11) 0%,transparent 60%)',
-              'radial-gradient(ellipse 40% 45% at 15% 82%,rgba(201,168,76,0.05) 0%,transparent 55%)',
+              'radial-gradient(ellipse 60% 55% at 75% 18%,rgba(201,168,76,0.10) 0%,transparent 60%)',
+              'radial-gradient(ellipse 40% 50% at 15% 80%,rgba(201,168,76,0.05) 0%,transparent 55%)',
               'radial-gradient(ellipse 30% 30% at 50% 50%,rgba(201,168,76,0.03) 0%,transparent 70%)',
               '#0a0a09',
             ].join(', '),
           }}
         />
-        {/* subtle grid */}
         <div className="hero-grid-overlay absolute inset-0" style={{ opacity: 0.45 }} />
 
-        <div className="relative z-10 max-w-[1280px] mx-auto w-full">
+        {/* parallax content */}
+        <motion.div
+          style={{ y: heroY, opacity: heroOpacity }}
+          className="relative z-10 max-w-[1280px] mx-auto w-full"
+        >
           {/* eyebrow */}
           <motion.p
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            animate="visible"
+            initial="hidden" animate="visible" variants={fadeUp} custom={0}
             className="hero-eyebrow flex items-center gap-4 font-mono text-[0.7rem] tracking-[0.2em] uppercase text-gold mb-6"
           >
-            Selected work — 2021–2025
+            Selected Work — 2021–2025
           </motion.p>
 
           {/* headline */}
           <motion.h1
-            variants={fadeUp}
-            custom={0.15}
-            initial="hidden"
-            animate="visible"
-            className="font-cormorant font-light text-hero text-brand leading-[0.93] tracking-tight mb-8 max-w-5xl"
+            initial="hidden" animate="visible" variants={fadeUp} custom={0.12}
+            className="font-cormorant font-light text-hero text-brand leading-[0.93] tracking-tight mb-10 max-w-5xl"
           >
-            Growth systems built<br />
-            for <em className="italic text-gold">modern brands.</em>
+            Growth Systems<br />
+            Built for <em className="italic text-gold">Modern Brands.</em>
           </motion.h1>
 
-          {/* description + chips */}
+          {/* sub + trust */}
           <motion.div
-            variants={fadeUp}
-            custom={0.3}
-            initial="hidden"
-            animate="visible"
+            initial="hidden" animate="visible" variants={fadeUp} custom={0.24}
             className="flex flex-col md:flex-row items-start md:items-end justify-between gap-10"
           >
             <p className="max-w-[500px] text-muted leading-[1.8] text-[1rem]">
-              Real client results across AI automation, digital marketing execution, Shopify growth,
-              lead generation, performance advertising, and conversion-focused systems — for
-              international businesses that compete on outcomes, not activity.
+              Real client results across AI automation, digital marketing, Shopify growth, lead
+              generation, performance advertising, and conversion-focused web systems — built
+              for brands that compete internationally.
             </p>
             <div className="flex flex-col gap-3 items-start md:items-end flex-shrink-0">
               {[
-                'AI automation · digital marketing',
-                'Real estate · local services · eCommerce',
-                'Upwork Top Rated · 5-Star reviews',
-              ].map(chip => (
+                'AI automation systems',
+                'Digital marketing execution',
+                'Lead generation & CRO',
+              ].map(item => (
                 <div
-                  key={chip}
-                  className="inline-flex items-center gap-3 font-mono text-[0.62rem] tracking-[0.12em] uppercase border border-border px-4 py-2 text-muted"
+                  key={item}
+                  className="inline-flex items-center gap-3 font-mono text-[0.63rem] tracking-[0.12em] uppercase border border-border px-4 py-2 text-muted"
                 >
                   <span className="text-gold text-[0.5rem]">◆</span>
-                  {chip}
+                  {item}
                 </div>
               ))}
             </div>
@@ -552,19 +662,19 @@ export default function WorkPage() {
 
           {/* animated stats */}
           <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate="visible"
+            initial="hidden" animate="visible" variants={fadeUp} custom={0.36}
             className="flex flex-wrap gap-12 md:gap-20 mt-16 pt-10 border-t border-white/[0.07]"
           >
-            {HERO_STATS.map(({ val, suffix, lbl }) => (
-              <AnimatedStat key={lbl} val={val} suffix={suffix} lbl={lbl} />
+            {HERO_STATS.map(s => (
+              <AnimatedStat key={s.lbl} val={s.val} suffix={s.suffix} lbl={s.lbl} />
             ))}
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
-      {/* marquee */}
+      {/* ══════════════════════════════════════════════════════════
+          MARQUEE
+      ══════════════════════════════════════════════════════════ */}
       <div className="bg-gold py-4 overflow-hidden">
         <div className="flex animate-marquee whitespace-nowrap">
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
@@ -578,671 +688,624 @@ export default function WorkPage() {
       {/* ══════════════════════════════════════════════════════════
           CASE STUDIES GRID
       ══════════════════════════════════════════════════════════ */}
-      <section className="bg-bg2 px-8 md:px-16 py-32">
+      <section className="bg-bg2 px-8 md:px-16 py-28">
         <div className="max-w-[1280px] mx-auto">
           {/* header */}
-          <motion.div
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8"
-          >
+          <RevealSection className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-14">
             <div>
-              <SectionLabel>Featured Case Studies</SectionLabel>
+              <SectionLabel>Case Studies</SectionLabel>
               <SectionTitle>
                 Six projects.<br />
-                <em className="italic text-gold">Real results.</em>
+                <em className="italic text-gold">Proven systems.</em>
               </SectionTitle>
             </div>
-            <p className="text-muted text-[0.88rem] leading-[1.75] max-w-xs self-end">
-              Each engagement is approached as a growth infrastructure project — not a one-off task.
-              Strategy, execution, and iteration in every case.
+            <p className="text-muted text-[0.9rem] leading-[1.75] max-w-xs self-end">
+              Every project here started with a clear business problem and ended with a measurable revenue outcome.
             </p>
-          </motion.div>
+          </RevealSection>
 
-          {/* grid — alternating featured / 2-col layouts */}
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="flex flex-col gap-px bg-border"
-          >
-            {/* ROW 1: featured wide card */}
-            <motion.div variants={cardReveal} className="grid md:grid-cols-[1fr_420px] bg-bg3 group cursor-pointer hover:border-gold/20 border border-transparent transition-colors duration-500 overflow-hidden">
-              <CardThumb palette={CASE_STUDIES[0].palette} height="min-h-[360px] h-full">
-                {/* num overlay */}
-                <div className="absolute bottom-6 left-6 z-10">
-                  <span className="font-mono text-[0.58rem] tracking-[0.2em] uppercase text-muted border border-white/[0.15] px-3 py-1.5 bg-bg/60 backdrop-blur-sm">
-                    {CASE_STUDIES[0].num} / 06
-                  </span>
-                </div>
-                <div className="absolute top-6 left-6 z-10 flex flex-wrap gap-2">
-                  {CASE_STUDIES[0].tags.map(t => (
-                    <span key={t} className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted border border-white/[0.15] px-2.5 py-1 bg-bg/60 backdrop-blur-sm">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-              </CardThumb>
+          {/* filter bar */}
+          <div className="flex flex-wrap gap-px bg-border border border-border mb-px overflow-hidden">
+            {filters.map(f => (
+              <motion.button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                whileTap={{ scale: 0.97 }}
+                className={`font-mono text-[0.65rem] tracking-[0.12em] uppercase px-6 py-4 transition-all duration-200 cursor-pointer border-0 outline-none ${
+                  activeFilter === f
+                    ? 'bg-gold text-bg'
+                    : 'bg-bg2 text-muted hover:text-gold hover:bg-surface'
+                }`}
+              >
+                {f}
+                {activeFilter === f && <span className="ml-2 text-[0.5rem]">◆</span>}
+              </motion.button>
+            ))}
+          </div>
 
-              <div className="p-10 md:p-14 flex flex-col justify-between border-t md:border-t-0 md:border-l border-border">
-                <div>
-                  <p className="font-mono text-[0.62rem] tracking-[0.15em] uppercase text-gold mb-5">
-                    {CASE_STUDIES[0].category}
+          {/* grid */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeFilter}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border"
+            >
+              {filteredCases.length === 0 ? (
+                <div className="col-span-3 bg-bg3 py-24 text-center">
+                  <p className="font-cormorant text-[1.4rem] font-light text-muted mb-2">
+                    No projects in this category.
                   </p>
-                  <h3 className="font-cormorant text-[2rem] font-normal leading-[1.1] text-brand mb-5 group-hover:text-gold transition-colors duration-300">
-                    {CASE_STUDIES[0].title}
-                  </h3>
-                  <p className="text-muted text-[0.88rem] leading-[1.78] mb-8">
-                    {CASE_STUDIES[0].desc}
-                  </p>
-                </div>
-                <div>
-                  <div className="flex gap-7 mb-8 flex-wrap">
-                    {CASE_STUDIES[0].metrics.map(m => (
-                      <div key={m.lbl}>
-                        <div className="font-cormorant text-[1.9rem] font-light text-gold leading-none">
-                          {m.val}{m.suffix}
-                        </div>
-                        <div className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted mt-1">{m.lbl}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <motion.a
-                    href={`/work/${CASE_STUDIES[0].id}`}
-                    whileHover={{ gap: '20px' }}
-                    className="inline-flex items-center gap-3 font-mono text-[0.68rem] tracking-[0.12em] uppercase text-gold no-underline transition-all"
+                  <button
+                    onClick={() => setActiveFilter('All')}
+                    className="font-mono text-[0.62rem] tracking-[0.12em] uppercase text-gold border-b border-gold pb-px bg-transparent cursor-pointer outline-none"
                   >
-                    View case study →
-                  </motion.a>
+                    View all work →
+                  </button>
                 </div>
-              </div>
-            </motion.div>
+              ) : (
+                filteredCases.map((c, idx) => (
+                  <motion.a
+                    key={c.slug}
+                    href={`/work/${c.slug}`}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.55, delay: idx * 0.07, ease: [0.23, 1, 0.32, 1] }}
+                    className="group flex flex-col bg-bg3 no-underline overflow-hidden border-0 outline-none"
+                  >
+                    {/* thumbnail */}
+                    <div className="relative overflow-hidden h-56 flex-shrink-0">
+                      <CaseThumbnail
+                        gradient={c.gradient}
+                        category={c.category}
+                        num={c.num}
+                        featured={c.featured}
+                      />
+                      {/* hover overlay */}
+                      <motion.div
+                        className="absolute inset-0 bg-gold/[0.06] opacity-0 group-hover:opacity-100 transition-opacity duration-400"
+                      />
+                      {/* scale on hover */}
+                      <motion.div
+                        className="absolute inset-0"
+                        style={{ transformOrigin: 'center' }}
+                        whileHover={{ scale: 1.04 }}
+                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+                      />
+                    </div>
 
-            {/* ROW 2: 2-col cards */}
-            <div className="grid md:grid-cols-2 gap-px bg-border">
-              {CASE_STUDIES.slice(1, 3).map((cs) => (
-                <motion.div
-                  key={cs.id}
-                  variants={cardReveal}
-                  className="bg-bg3 group cursor-pointer flex flex-col overflow-hidden border border-transparent hover:border-gold/20 transition-colors duration-500"
-                >
-                  <CardThumb palette={cs.palette} height="h-52">
-                    <div className="absolute top-5 left-5 z-10 flex flex-wrap gap-2">
-                      {cs.tags.slice(0, 2).map(t => (
-                        <span key={t} className="font-mono text-[0.57rem] tracking-[0.1em] uppercase text-muted border border-white/[0.15] px-2.5 py-1 bg-bg/60 backdrop-blur-sm">
-                          {t}
+                    {/* content */}
+                    <div className="flex flex-col flex-1 p-8 group-hover:bg-surface transition-colors duration-300">
+                      <div className="flex items-center justify-between mb-5">
+                        <span className="font-mono text-[0.6rem] tracking-[0.14em] uppercase text-dim">
+                          {c.industry}
                         </span>
-                      ))}
-                    </div>
-                    <div className="absolute bottom-5 right-5 font-mono text-[0.57rem] tracking-[0.16em] text-muted z-10">
-                      {cs.num} / 06
-                    </div>
-                  </CardThumb>
+                        <span className="font-mono text-[0.58rem] tracking-[0.16em] text-gold/50">
+                          {c.num}
+                        </span>
+                      </div>
 
-                  <div className="p-8 md:p-10 flex flex-col flex-1">
-                    <p className="font-mono text-[0.6rem] tracking-[0.15em] uppercase text-gold mb-4">{cs.category}</p>
-                    <h3 className="font-cormorant text-[1.55rem] font-normal leading-tight text-brand mb-4 group-hover:text-gold transition-colors duration-300">
-                      {cs.title}
-                    </h3>
-                    <p className="text-muted text-[0.84rem] leading-[1.75] mb-7 flex-1">{cs.desc}</p>
+                      <h3 className="font-cormorant font-normal text-[1.3rem] leading-[1.2] text-brand mb-3 group-hover:text-gold transition-colors duration-300">
+                        {c.title}
+                      </h3>
 
-                    <div className="pt-6 border-t border-white/[0.06]">
-                      <div className="flex gap-5 mb-6 flex-wrap">
-                        {cs.metrics.map(m => (
-                          <div key={m.lbl}>
-                            <div className="font-cormorant text-[1.55rem] font-light text-gold leading-none">{m.val}{m.suffix}</div>
-                            <div className="font-mono text-[0.56rem] tracking-[0.1em] uppercase text-muted mt-0.5">{m.lbl}</div>
+                      <p className="text-muted text-[0.83rem] leading-[1.72] mb-6 line-clamp-3">
+                        {c.desc}
+                      </p>
+
+                      {/* metrics */}
+                      <div className="flex gap-6 mb-6 pt-5 border-t border-white/[0.06]">
+                        {c.results.map(r => (
+                          <div key={r.lbl}>
+                            <div className="font-cormorant font-light text-[1.5rem] text-gold leading-none">
+                              {r.val}
+                            </div>
+                            <div className="font-mono text-[0.55rem] tracking-[0.1em] uppercase text-dim mt-0.5">
+                              {r.lbl}
+                            </div>
                           </div>
                         ))}
                       </div>
-                      <a href={`/work/${cs.id}`} className="inline-flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.1em] uppercase text-muted hover:text-gold transition-colors no-underline group-hover:text-gold">
-                        View case study →
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
 
-            {/* ROW 3: reversed — content left, thumb right */}
-            <motion.div variants={cardReveal} className="grid md:grid-cols-[420px_1fr] bg-bg3 group cursor-pointer border border-transparent hover:border-gold/20 transition-colors duration-500 overflow-hidden">
-              <div className="p-10 md:p-14 flex flex-col justify-between border-b md:border-b-0 md:border-r border-border order-2 md:order-1">
-                <div>
-                  <p className="font-mono text-[0.62rem] tracking-[0.15em] uppercase text-gold mb-5">{CASE_STUDIES[3].category}</p>
-                  <h3 className="font-cormorant text-[2rem] font-normal leading-[1.1] text-brand mb-5 group-hover:text-gold transition-colors duration-300">
-                    {CASE_STUDIES[3].title}
-                  </h3>
-                  <p className="text-muted text-[0.88rem] leading-[1.78] mb-8">{CASE_STUDIES[3].desc}</p>
-                </div>
-                <div>
-                  <div className="flex gap-7 mb-8 flex-wrap">
-                    {CASE_STUDIES[3].metrics.map(m => (
-                      <div key={m.lbl}>
-                        <div className="font-cormorant text-[1.9rem] font-light text-gold leading-none">{m.val}{m.suffix}</div>
-                        <div className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted mt-1">{m.lbl}</div>
+                      {/* tags */}
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {c.tags.map(t => (
+                          <span
+                            key={t}
+                            className="font-mono text-[0.58rem] tracking-[0.1em] uppercase text-dim border border-border px-2.5 py-1 group-hover:border-gold/20 group-hover:text-muted/80 transition-colors duration-300"
+                          >
+                            {t}
+                          </span>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <a href={`/work/${CASE_STUDIES[3].id}`} className="inline-flex items-center gap-3 font-mono text-[0.68rem] tracking-[0.12em] uppercase text-gold no-underline hover:gap-5 transition-all">
-                    View case study →
-                  </a>
-                </div>
-              </div>
 
-              <CardThumb palette={CASE_STUDIES[3].palette} height="min-h-[360px] h-full order-1 md:order-2">
-                <div className="absolute top-6 left-6 z-10 flex flex-wrap gap-2">
-                  {CASE_STUDIES[3].tags.map(t => (
-                    <span key={t} className="font-mono text-[0.57rem] tracking-[0.1em] uppercase text-muted border border-white/[0.15] px-2.5 py-1 bg-bg/60 backdrop-blur-sm">{t}</span>
-                  ))}
-                </div>
-                <div className="absolute bottom-6 right-6 font-mono text-[0.57rem] tracking-[0.16em] text-muted z-10">{CASE_STUDIES[3].num} / 06</div>
-              </CardThumb>
+                      <div className="mt-auto flex items-center justify-between">
+                        <span className="font-mono text-[0.65rem] tracking-[0.12em] uppercase text-muted group-hover:text-gold transition-colors duration-200">
+                          View case study
+                        </span>
+                        <motion.span
+                          className="text-muted group-hover:text-gold transition-colors duration-200 text-sm"
+                          animate={{ x: 0 }}
+                          whileGroupHover={{ x: 4 }}
+                        >
+                          →
+                        </motion.span>
+                      </div>
+                    </div>
+                  </motion.a>
+                ))
+              )}
             </motion.div>
+          </AnimatePresence>
 
-            {/* ROW 4: 2-col cards */}
-            <div className="grid md:grid-cols-2 gap-px bg-border">
-              {CASE_STUDIES.slice(4, 6).map((cs) => (
-                <motion.div
-                  key={cs.id}
-                  variants={cardReveal}
-                  className="bg-bg3 group cursor-pointer flex flex-col overflow-hidden border border-transparent hover:border-gold/20 transition-colors duration-500"
-                >
-                  <CardThumb palette={cs.palette} height="h-52">
-                    <div className="absolute top-5 left-5 z-10 flex flex-wrap gap-2">
-                      {cs.tags.slice(0, 2).map(t => (
-                        <span key={t} className="font-mono text-[0.57rem] tracking-[0.1em] uppercase text-muted border border-white/[0.15] px-2.5 py-1 bg-bg/60 backdrop-blur-sm">{t}</span>
-                      ))}
-                    </div>
-                    <div className="absolute bottom-5 right-5 font-mono text-[0.57rem] tracking-[0.16em] text-muted z-10">{cs.num} / 06</div>
-                  </CardThumb>
-                  <div className="p-8 md:p-10 flex flex-col flex-1">
-                    <p className="font-mono text-[0.6rem] tracking-[0.15em] uppercase text-gold mb-4">{cs.category}</p>
-                    <h3 className="font-cormorant text-[1.55rem] font-normal leading-tight text-brand mb-4 group-hover:text-gold transition-colors duration-300">{cs.title}</h3>
-                    <p className="text-muted text-[0.84rem] leading-[1.75] mb-7 flex-1">{cs.desc}</p>
-                    <div className="pt-6 border-t border-white/[0.06]">
-                      <div className="flex gap-5 mb-6 flex-wrap">
-                        {cs.metrics.map(m => (
-                          <div key={m.lbl}>
-                            <div className="font-cormorant text-[1.55rem] font-light text-gold leading-none">{m.val}{m.suffix}</div>
-                            <div className="font-mono text-[0.56rem] tracking-[0.1em] uppercase text-muted mt-0.5">{m.lbl}</div>
-                          </div>
-                        ))}
-                      </div>
-                      <a href={`/work/${cs.id}`} className="inline-flex items-center gap-2 font-mono text-[0.65rem] tracking-[0.1em] uppercase text-muted hover:text-gold transition-colors no-underline group-hover:text-gold">
-                        View case study →
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
+          {/* count */}
+          <div className="mt-px border border-border border-t-0 bg-bg3 px-8 py-4 flex items-center justify-between">
+            <span className="font-mono text-[0.6rem] tracking-[0.12em] uppercase text-dim">
+              Showing {filteredCases.length} of {CASE_STUDIES.length} projects
+            </span>
+            <BtnGhost href="/contact">Start your own project →</BtnGhost>
+          </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
           UPWORK SHOWCASE
       ══════════════════════════════════════════════════════════ */}
-      <section className="bg-bg px-8 md:px-16 py-32">
+      <section className="bg-bg px-8 md:px-16 py-28">
         <div className="max-w-[1280px] mx-auto">
-          <motion.div
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            className="mb-16"
-          >
-            <SectionLabel>Freelance Platform</SectionLabel>
+          <RevealSection className="mb-16">
+            <SectionLabel>Verified Track Record</SectionLabel>
             <SectionTitle>
-              Verified on Upwork.<br />
-              <em className="italic text-gold">Trusted internationally.</em>
+              Trusted on Upwork<br />
+              <em className="italic text-gold">by clients worldwide</em>
             </SectionTitle>
-          </motion.div>
+          </RevealSection>
 
-          <motion.div
-            variants={fadeUp}
-            custom={0.1}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid md:grid-cols-[1fr_360px] gap-px bg-border overflow-hidden"
-          >
-            {/* Left: platform card */}
-            <div className="bg-bg3 p-10 md:p-14 relative overflow-hidden">
-              {/* subtle gold glow behind content */}
-              <div
-                className="absolute -top-20 -right-20 w-80 h-80 rounded-full opacity-10 pointer-events-none"
-                style={{ background: 'radial-gradient(circle,rgba(201,168,76,1) 0%,transparent 70%)' }}
-              />
+          <RevealSection delay={0.1}>
+            <div className="grid lg:grid-cols-[1fr_400px] gap-px bg-border border border-border overflow-hidden">
+              {/* Left: profile card */}
+              <div className="bg-bg3 p-10 md:p-14 relative overflow-hidden">
+                {/* corner glow */}
+                <div
+                  className="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none"
+                  style={{ background: 'radial-gradient(circle,rgba(201,168,76,1) 0%,transparent 70%)' }}
+                />
 
-              <div className="relative z-10">
-                {/* platform header */}
-                <div className="flex items-start justify-between mb-10 flex-wrap gap-4">
+                <div className="flex items-start gap-6 mb-10">
+                  {/* avatar */}
+                  <div className="w-16 h-16 rounded-full border border-gold/30 bg-surface flex items-center justify-center flex-shrink-0">
+                    <span className="font-cormorant text-[1.6rem] font-light text-gold">T</span>
+                  </div>
                   <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="font-mono text-[0.62rem] tracking-[0.18em] uppercase text-gold border border-gold/30 px-3 py-1.5">
-                        Top Rated Freelancer
-                      </span>
-                      <span className="font-mono text-[0.62rem] tracking-[0.18em] uppercase text-green border border-green/25 px-3 py-1.5">
-                        Available
-                      </span>
-                    </div>
-                    <h3 className="font-cormorant text-[1.9rem] font-normal text-brand mt-3">
-                      Towhid — Digital Growth & AI Systems
+                    <h3 className="font-cormorant text-[1.5rem] font-normal text-brand mb-1">
+                      Towhid — Nexyra<span className="text-gold">.</span>
                     </h3>
-                    <p className="text-muted text-[0.88rem] mt-2">
-                      Upwork · upwork.com/freelancers/towhid
+                    <p className="font-mono text-[0.65rem] tracking-[0.12em] uppercase text-muted">
+                      Digital Marketing & AI Automation Specialist
                     </p>
                   </div>
                 </div>
 
-                {/* metric grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border mb-10">
+                {/* badges row */}
+                <div className="flex flex-wrap gap-3 mb-10">
                   {[
-                    { val: '100',  suffix: '%', lbl: 'Job Success',       sub: 'Verified score'        },
-                    { val: '5.0',  suffix: '★', lbl: 'Client Rating',     sub: 'All engagements'       },
-                    { val: '$10K', suffix: '+',  lbl: 'Total Earned',      sub: 'Platform verified'     },
-                    { val: '4',    suffix: 'yr', lbl: 'On Platform',       sub: 'Since 2021'            },
-                  ].map(m => (
-                    <div key={m.lbl} className="bg-bg2 p-6 flex flex-col gap-1">
-                      <div className="font-cormorant text-[1.8rem] font-light leading-none text-brand">
-                        {m.val}<span className="text-gold">{m.suffix}</span>
+                    { label: 'Top Rated',        glow: true  },
+                    { label: '100% Job Success', glow: false },
+                    { label: '5-Star Reviews',   glow: false },
+                    { label: 'Multi-Year',       glow: false },
+                  ].map(({ label, glow }) => (
+                    <span
+                      key={label}
+                      className={`font-mono text-[0.6rem] tracking-[0.14em] uppercase px-4 py-2 leading-none ${
+                        glow
+                          ? 'text-bg bg-gold'
+                          : 'text-muted border border-border'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+
+                {/* metrics grid */}
+                <div className="grid grid-cols-2 gap-px bg-border mb-10">
+                  {[
+                    { val: '80+',    lbl: 'Projects completed'   },
+                    { val: '5.0',    lbl: 'Average star rating'  },
+                    { val: '100%',   lbl: 'Job success score'    },
+                    { val: '4+yrs',  lbl: 'Platform experience'  },
+                  ].map(({ val, lbl }) => (
+                    <div key={lbl} className="bg-bg3 px-6 py-5">
+                      <div className="font-cormorant font-light text-[2rem] text-gold leading-none mb-1">
+                        {val}
                       </div>
-                      <div className="font-mono text-[0.6rem] tracking-[0.14em] uppercase text-muted">{m.lbl}</div>
-                      <div className="font-mono text-[0.55rem] tracking-[0.08em] uppercase text-dim">{m.sub}</div>
+                      <div className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-dim">
+                        {lbl}
+                      </div>
                     </div>
                   ))}
                 </div>
 
-                {/* what clients hire for */}
-                <div className="mb-10">
+                {/* about */}
+                <p className="text-muted text-[0.9rem] leading-[1.78] mb-10">
+                  Specialising in AI-powered lead generation, performance advertising, and conversion
+                  engineering for international clients across real estate, eCommerce, and local services.
+                  All Upwork work is executed personally — not delegated to junior staff.
+                </p>
+
+                {/* what clients say */}
+                <div className="pt-8 border-t border-white/[0.06]">
                   <p className="font-mono text-[0.6rem] tracking-[0.14em] uppercase text-muted mb-5">
-                    Hired for
+                    What clients say
                   </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col gap-3">
                     {[
-                      'Google Ads', 'Meta Ads', 'AI Automation', 'Web Design',
-                      'Lead Generation', 'Shopify CRO', 'Email Flows', 'CRM Setup',
-                    ].map(tag => (
-                      <span
-                        key={tag}
-                        className="font-mono text-[0.6rem] tracking-[0.1em] uppercase text-dim border border-border px-3 py-1.5"
+                      '"Diligent, thorough, precise, and easy to communicate with."',
+                      '"Very proactive — results came faster than expected."',
+                      '"Excellent work ethic and highly motivated."',
+                    ].map((q, i) => (
+                      <div key={i} className="flex items-start gap-3">
+                        <span className="text-gold text-[0.65rem] mt-0.5 flex-shrink-0">◆</span>
+                        <p className="font-cormorant italic text-[1rem] text-brand/75 leading-[1.5]">{q}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: CTA panel */}
+              <div className="bg-bg2 p-10 md:p-14 flex flex-col justify-between gap-10 border-t lg:border-t-0 lg:border-l border-border">
+                <div>
+                  <p className="section-label mb-6">Work with Towhid</p>
+                  <h3 className="font-cormorant text-[1.6rem] font-normal leading-tight text-brand mb-6">
+                    Hire directly on Upwork or through Nexyra<span className="text-gold">.</span>
+                  </h3>
+                  <p className="text-muted text-[0.88rem] leading-[1.75] mb-8">
+                    Whether you prefer the security of Upwork&apos;s payment protection or a direct
+                    engagement through Nexyra — both paths lead to the same outcome: a growth
+                    system built specifically for your business.
+                  </p>
+
+                  {/* platform options */}
+                  <div className="flex flex-col gap-4">
+                    {[
+                      {
+                        name: 'Upwork Platform',
+                        desc: 'Full payment protection, contract history, dispute resolution',
+                        href: 'https://www.upwork.com/freelancers/towhid',
+                        primary: true,
+                      },
+                      {
+                        name: 'Direct via Nexyra',
+                        desc: 'Faster onboarding, retainer contracts, full agency scope',
+                        href: '/contact',
+                        primary: false,
+                      },
+                    ].map(opt => (
+                      <a
+                        key={opt.name}
+                        href={opt.href}
+                        target={opt.href.startsWith('http') ? '_blank' : undefined}
+                        rel="noopener noreferrer"
+                        className={`flex items-start gap-4 p-5 border no-underline transition-all duration-300 group ${
+                          opt.primary
+                            ? 'border-gold/30 bg-gold/[0.04] hover:bg-gold/[0.08]'
+                            : 'border-border hover:border-gold/20 hover:bg-surface'
+                        }`}
                       >
-                        {tag}
-                      </span>
+                        <div
+                          className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
+                            opt.primary ? 'bg-gold' : 'bg-dim'
+                          }`}
+                        />
+                        <div>
+                          <p className={`font-mono text-[0.65rem] tracking-[0.12em] uppercase mb-1 ${
+                            opt.primary ? 'text-gold' : 'text-muted'
+                          }`}>
+                            {opt.name}
+                          </p>
+                          <p className="text-dim text-[0.82rem]">{opt.desc}</p>
+                        </div>
+                        <span className="ml-auto text-dim group-hover:text-gold transition-colors text-sm self-center">→</span>
+                      </a>
                     ))}
                   </div>
                 </div>
 
-                {/* highlights */}
-                <div className="flex flex-col gap-3 mb-10">
-                  {[
-                    'Long-term clients across real estate, eCommerce, and local services',
-                    'Repeat contracts — most clients extend or return for new projects',
-                    'International engagements across 12+ countries',
-                    'All work strategy-led — not just task execution',
-                  ].map(item => (
-                    <div key={item} className="flex items-start gap-4">
-                      <span className="text-gold text-[0.6rem] mt-0.5 flex-shrink-0">◆</span>
-                      <span className="text-muted text-[0.86rem] leading-[1.65]">{item}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap gap-4">
+                {/* CTA buttons */}
+                <div className="flex flex-col gap-4">
                   <BtnPrimary href="https://www.upwork.com/freelancers/towhid">
                     View Upwork Profile →
                   </BtnPrimary>
-                  <BtnGhost href="/contact">Start a project</BtnGhost>
+                  <BtnGhost href="/contact">Start a project directly</BtnGhost>
                 </div>
+
+                {/* trust note */}
+                <p className="font-mono text-[0.58rem] tracking-[0.1em] uppercase text-dim pt-4 border-t border-white/[0.05]">
+                  International clients · All time zones · Rolling contracts · No lock-in
+                </p>
               </div>
             </div>
-
-            {/* Right: score/trust sidebar */}
-            <div className="bg-bg2 flex flex-col divide-y divide-border">
-              <div className="p-8 md:p-10">
-                <p className="section-label mb-6">Platform standing</p>
-                <div className="flex flex-col gap-6">
-                  {[
-                    { icon: '⭐', label: 'Top Rated Badge',     desc: 'Awarded to top 10% of Upwork freelancers'     },
-                    { icon: '✓',  label: 'Identity Verified',   desc: 'Government ID verified by Upwork'             },
-                    { icon: '🔒', label: 'Payment Protected',   desc: 'All contracts under Upwork payment protection' },
-                    { icon: '↺',  label: 'Repeat Client Rate',  desc: 'Majority of clients return for new projects'  },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-start gap-4">
-                      <span className="text-[1rem] flex-shrink-0 mt-0.5">{item.icon}</span>
-                      <div>
-                        <p className="font-mono text-[0.62rem] tracking-[0.12em] uppercase text-brand mb-0.5">
-                          {item.label}
-                        </p>
-                        <p className="text-dim text-[0.78rem] leading-[1.5]">{item.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="p-8 md:p-10 flex-1 flex flex-col justify-between">
-                <div>
-                  <p className="section-label mb-4">Response time</p>
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="w-2 h-2 rounded-full bg-green animate-pulse-dot flex-shrink-0" />
-                    <span className="font-cormorant text-[1.3rem] font-normal text-brand">Within a few hours</span>
-                  </div>
-                  <p className="text-muted text-[0.83rem] leading-[1.7]">
-                    Active Monday through Saturday. International time zones accommodated — clients from
-                    North America, Europe, the Middle East, and Australia.
-                  </p>
-                </div>
-                <div className="mt-8 pt-8 border-t border-border">
-                  <p className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-dim mb-2">
-                    Prefer to work outside Upwork?
-                  </p>
-                  <a
-                    href="/contact"
-                    className="font-mono text-[0.65rem] tracking-[0.1em] uppercase text-gold no-underline hover:text-gold2 transition-colors"
-                  >
-                    Contact directly →
-                  </a>
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          </RevealSection>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
           TESTIMONIALS
       ══════════════════════════════════════════════════════════ */}
-      <section className="bg-bg2 px-8 md:px-16 py-32">
+      <section className="bg-bg2 px-8 md:px-16 py-28">
         <div className="max-w-[1280px] mx-auto">
-          <motion.div
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8"
-          >
+          <RevealSection className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
             <div>
-              <SectionLabel>Client Voices</SectionLabel>
+              <SectionLabel>Client Feedback</SectionLabel>
               <SectionTitle>
-                5-star feedback<br />
-                <em className="italic text-gold">from real clients.</em>
+                What clients<br />
+                <em className="italic text-gold">actually say</em>
               </SectionTitle>
             </div>
-            <div className="flex items-center gap-4 self-end">
-              <div className="flex items-center gap-1.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <svg key={i} viewBox="0 0 12 12" fill="currentColor" className="w-3.5 h-3.5 text-gold">
-                    <path d="M6 0l1.5 4.5H12L8.25 7.25l1.5 4.5L6 9l-3.75 2.75 1.5-4.5L0 4.5h4.5z" />
-                  </svg>
-                ))}
+            <div className="self-end">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="font-cormorant text-[2.2rem] font-light text-gold leading-none">5.0</span>
+                <div>
+                  <div className="text-gold text-[0.8rem] tracking-[0.08em]">★★★★★</div>
+                  <p className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted">Average rating</p>
+                </div>
               </div>
-              <span className="font-mono text-[0.6rem] tracking-[0.14em] uppercase text-muted">
-                All verified Upwork reviews
-              </span>
             </div>
-          </motion.div>
+          </RevealSection>
 
-          {/* testimonial cards — editorial style */}
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-60px' }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border"
-          >
+          {/* testimonial grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
             {TESTIMONIALS.map((t, idx) => (
               <motion.div
-                key={t.initials}
-                variants={cardReveal}
-                whileHover={{ y: -4 }}
-                transition={{ duration: 0.3 }}
-                className="bg-bg3 p-8 md:p-10 flex flex-col justify-between border border-transparent hover:border-gold/15 transition-colors duration-400"
+                key={t.name}
+                ref={useRef(null)}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: '-60px' }}
+                variants={scaleIn}
+                custom={idx * 0.09}
+                className="bg-bg3 p-8 md:p-10 flex flex-col gap-6 hover:bg-surface transition-colors duration-300 group"
               >
-                <div>
-                  {/* open quote */}
-                  <div className="font-cormorant text-[4.5rem] font-light leading-[0.55] text-gold/25 mb-6 select-none">
-                    &ldquo;
-                  </div>
+                {/* quote mark */}
+                <div className="font-cormorant text-[4rem] font-light text-gold/20 leading-[0.7] group-hover:text-gold/35 transition-colors duration-300">
+                  &ldquo;
+                </div>
 
-                  {/* star row */}
-                  <div className="flex items-center gap-1.5 mb-5">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <svg key={i} viewBox="0 0 12 12" fill="currentColor" className="w-3 h-3 text-gold">
-                        <path d="M6 0l1.5 4.5H12L8.25 7.25l1.5 4.5L6 9l-3.75 2.75 1.5-4.5L0 4.5h4.5z" />
-                      </svg>
-                    ))}
-                    <span className="font-mono text-[0.55rem] tracking-[0.12em] uppercase text-dim ml-2">
-                      Upwork
-                    </span>
-                  </div>
+                {/* category badge */}
+                <span className="font-mono text-[0.58rem] tracking-[0.14em] uppercase text-gold/60 border border-gold/15 px-3 py-1.5 self-start">
+                  {t.category}
+                </span>
 
-                  {/* category */}
-                  <p className="font-mono text-[0.58rem] tracking-[0.14em] uppercase text-gold mb-5">
-                    {t.category}
-                  </p>
+                {/* quote */}
+                <p className="font-cormorant italic text-[1.1rem] text-brand/85 leading-[1.65] flex-1">
+                  {t.quote}
+                </p>
 
-                  {/* text */}
-                  <p className="font-cormorant italic text-[1.08rem] text-brand/88 leading-[1.72] mb-8">
-                    &ldquo;{t.text}&rdquo;
-                  </p>
+                {/* stars */}
+                <div className="text-gold text-[0.75rem] tracking-[0.08em]">
+                  {'★'.repeat(t.stars)}
                 </div>
 
                 {/* author */}
-                <div className="flex items-center gap-4 pt-6 border-t border-white/[0.06]">
-                  {/* avatar */}
-                  <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center font-cormorant text-[1.15rem] text-gold border border-border flex-shrink-0"
-                    style={{ background: PALETTE_BG[t.palette] }}
-                  >
-                    {t.initials}
+                <div className="flex items-center gap-4 pt-5 border-t border-white/[0.06]">
+                  <div className="w-10 h-10 rounded-full border border-border bg-surface flex items-center justify-center flex-shrink-0 group-hover:border-gold/30 transition-colors duration-300">
+                    <span className="font-cormorant text-[1rem] text-gold">{t.initials}</span>
                   </div>
                   <div>
-                    <p className="font-cabinet font-bold text-[0.9rem] text-brand">{t.name}</p>
-                    <p className="font-mono text-[0.6rem] tracking-[0.08em] uppercase text-muted">{t.role}</p>
+                    <p className="font-cabinet font-bold text-[0.88rem] text-brand">{t.name}</p>
+                    <p className="font-mono text-[0.58rem] tracking-[0.08em] uppercase text-muted">{t.role}</p>
                   </div>
                 </div>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════════════════════
-          PROCESS — cinematic large type version
-      ══════════════════════════════════════════════════════════ */}
-      <section className="bg-bg px-8 md:px-16 py-32 overflow-hidden">
-        <div className="max-w-[1280px] mx-auto">
-          <motion.div
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            className="grid md:grid-cols-2 gap-12 items-end mb-24"
-          >
-            <div>
-              <SectionLabel>How We Work</SectionLabel>
-              <SectionTitle>
-                Strategy, build,<br />
-                <em className="italic text-gold">automate, scale.</em>
-              </SectionTitle>
-            </div>
-            <p className="text-muted leading-[1.8] text-[0.95rem] self-end">
-              Every engagement follows the same four-phase system. The output varies by client —
-              the methodology doesn&apos;t.
-            </p>
-          </motion.div>
-
-          {/* Cinematic process list */}
-          <div className="flex flex-col gap-px bg-border">
-            {PROCESS_STEPS.map((step, idx) => {
-              const ref = useRef<HTMLDivElement>(null)
-              const inView = useInView(ref, { once: true, margin: '-80px' })
-              return (
-                <motion.div
-                  key={step.num}
-                  ref={ref}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={inView ? { opacity: 1, x: 0 } : {}}
-                  transition={{ duration: 0.8, delay: idx * 0.1, ease: [0.23, 1, 0.32, 1] }}
-                  className="bg-bg3 group"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center gap-0 overflow-hidden">
-                    {/* large num */}
-                    <div className="px-8 md:px-12 py-8 md:py-10 border-b md:border-b-0 md:border-r border-border flex-shrink-0 md:w-40 text-center md:text-left">
-                      <span className="font-cormorant text-[4.5rem] font-light leading-none text-gold/[0.12] group-hover:text-gold/25 transition-colors duration-500">
-                        {step.num}
-                      </span>
-                    </div>
-
-                    {/* word — cinematic */}
-                    <div className="px-8 md:px-12 py-8 md:py-10 border-b md:border-b-0 md:border-r border-border flex-shrink-0 md:w-60">
-                      <span className="font-cormorant text-[2.2rem] font-normal text-brand group-hover:text-gold transition-colors duration-400">
-                        {step.word}
-                      </span>
-                    </div>
-
-                    {/* desc */}
-                    <div className="px-8 md:px-12 py-8 md:py-10 border-b md:border-b-0 md:border-r border-border flex-1">
-                      <p className="text-muted text-[0.9rem] leading-[1.75]">{step.desc}</p>
-                    </div>
-
-                    {/* accent */}
-                    <div className="px-8 md:px-12 py-8 md:py-10 flex-shrink-0 md:w-56">
-                      <p className="font-cormorant italic text-[1.05rem] text-gold/70 leading-[1.4]">
-                        {step.accent}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* animated underline */}
-                  <motion.div
-                    className="h-px bg-gold/30"
-                    initial={{ scaleX: 0 }}
-                    animate={inView ? { scaleX: 1 } : {}}
-                    transition={{ duration: 1.2, delay: idx * 0.1 + 0.3, ease: [0.23, 1, 0.32, 1] }}
-                    style={{ transformOrigin: 'left' }}
-                  />
-                </motion.div>
-              )
-            })}
           </div>
 
-          {/* timeline accent strip */}
-          <motion.div
-            variants={fadeUp}
-            custom={0.2}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="mt-16 pt-10 border-t border-white/[0.05] flex flex-wrap gap-10 md:gap-20 items-center"
-          >
+          {/* aggregate trust bar */}
+          <div className="mt-px border border-border border-t-0 bg-bg3 grid grid-cols-2 md:grid-cols-4 divide-x divide-border">
             {[
-              { val: '14–18', suffix: 'd', lbl: 'Avg. go-live'      },
-              { val: 'Weekly', suffix: '.', lbl: 'Performance reports' },
-              { val: 'No',     suffix: ' lock-in', lbl: 'Rolling contracts' },
-            ].map(({ val, suffix, lbl }) => (
-              <div key={lbl}>
-                <span className="font-cormorant text-[2rem] font-light text-brand leading-none">
-                  {val}<span className="text-gold">{suffix}</span>
-                </span>
-                <p className="font-mono text-[0.62rem] tracking-[0.14em] uppercase text-muted mt-1">{lbl}</p>
+              { val: '5.0',  lbl: 'Star rating on Upwork'     },
+              { val: '100%', lbl: 'Job success score'          },
+              { val: '80+',  lbl: 'Completed contracts'        },
+              { val: 'All',  lbl: 'Reviews verified by Upwork' },
+            ].map(({ val, lbl }) => (
+              <div key={lbl} className="px-8 py-6 text-center">
+                <div className="font-cormorant font-light text-[1.8rem] text-gold leading-none mb-1">{val}</div>
+                <div className="font-mono text-[0.58rem] tracking-[0.1em] uppercase text-dim">{lbl}</div>
               </div>
             ))}
-            <div className="md:ml-auto">
-              <BtnGhost href="/services">See all services</BtnGhost>
-            </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
-          FINAL CTA — large cinematic
+          PROCESS — Strategy · Build · Automate · Scale
+      ══════════════════════════════════════════════════════════ */}
+      <section className="bg-bg px-8 md:px-16 py-28 overflow-hidden">
+        <div className="max-w-[1280px] mx-auto">
+          <RevealSection className="grid md:grid-cols-2 gap-12 items-end mb-20">
+            <div>
+              <SectionLabel>The Method</SectionLabel>
+              <SectionTitle>
+                Every project follows<br />
+                <em className="italic text-gold">the same proven system</em>
+              </SectionTitle>
+            </div>
+            <p className="text-muted leading-[1.8] self-end text-[0.95rem]">
+              There is no guesswork in how Nexyra operates. Every engagement runs through four
+              disciplines in sequence — because skipping steps is how results stall.
+            </p>
+          </RevealSection>
+
+          {/* process steps */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-border">
+            {PROCESS_STEPS.map((step, idx) => (
+              <motion.div
+                key={step.num}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: '-40px' }}
+                variants={fadeUp}
+                custom={idx * 0.1}
+                className="process-step bg-bg p-10 group"
+              >
+                {/* icon */}
+                <div className="mb-6 opacity-70 group-hover:opacity-100 transition-opacity duration-300">
+                  {step.icon}
+                </div>
+
+                {/* ghost number */}
+                <div className="font-cormorant text-[4.5rem] font-light leading-none mb-3 text-gold/[0.08] group-hover:text-gold/20 transition-colors duration-500">
+                  {step.num}
+                </div>
+
+                <h3 className="font-cormorant text-[1.5rem] font-normal text-brand mb-4">
+                  {step.title}
+                </h3>
+                <p className="text-muted text-[0.87rem] leading-[1.75]">{step.desc}</p>
+
+                {/* animated underline */}
+                <motion.div
+                  className="mt-6 h-px bg-gold/0 group-hover:bg-gold/30 transition-all duration-500"
+                  style={{ width: '40px' }}
+                />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* cinematic timeline accent */}
+          <RevealSection delay={0.2} className="mt-16 pt-10 border-t border-white/[0.05]">
+            <div className="flex flex-wrap gap-10 md:gap-20 items-center">
+              <div>
+                <span className="font-cormorant text-[2.2rem] font-light text-brand leading-none">
+                  14–18<span className="text-gold">d</span>
+                </span>
+                <p className="font-mono text-[0.62rem] tracking-[0.14em] uppercase text-muted mt-1">Go-live target</p>
+              </div>
+              <div>
+                <span className="font-cormorant text-[2.2rem] font-light text-brand leading-none">
+                  90<span className="text-gold">d</span>
+                </span>
+                <p className="font-mono text-[0.62rem] tracking-[0.14em] uppercase text-muted mt-1">Full system maturity</p>
+              </div>
+              <div>
+                <span className="font-cormorant text-[2.2rem] font-light text-brand leading-none">
+                  Weekly<span className="text-gold">.</span>
+                </span>
+                <p className="font-mono text-[0.62rem] tracking-[0.14em] uppercase text-muted mt-1">Optimisation cycles</p>
+              </div>
+              <div className="md:ml-auto">
+                <BtnGhost href="/services">See all services →</BtnGhost>
+              </div>
+            </div>
+          </RevealSection>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          FINAL CTA — cinematic full-bleed
       ══════════════════════════════════════════════════════════ */}
       <section className="bg-bg2 relative overflow-hidden px-8 md:px-16 py-44 text-center">
-        {/* layered glow effects */}
+        {/* layered glow background */}
         <motion.div
-          className="absolute inset-0"
           animate={{
             background: [
-              'radial-gradient(ellipse 70% 60% at 50% 50%,rgba(201,168,76,0.08) 0%,transparent 65%),#111110',
-              'radial-gradient(ellipse 80% 70% at 50% 50%,rgba(201,168,76,0.11) 0%,transparent 65%),#111110',
-              'radial-gradient(ellipse 70% 60% at 50% 50%,rgba(201,168,76,0.08) 0%,transparent 65%),#111110',
+              'radial-gradient(ellipse 70% 70% at 50% 50%,rgba(201,168,76,0.08) 0%,transparent 70%),#111110',
+              'radial-gradient(ellipse 75% 75% at 50% 50%,rgba(201,168,76,0.11) 0%,transparent 70%),#111110',
+              'radial-gradient(ellipse 70% 70% at 50% 50%,rgba(201,168,76,0.08) 0%,transparent 70%),#111110',
             ],
           }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0"
         />
 
         {/* pulsing rings */}
         <div
-          className="absolute w-[700px] h-[700px] rounded-full border border-gold/[0.06] animate-ring pointer-events-none"
+          className="absolute w-[600px] h-[600px] rounded-full border border-gold/[0.07] animate-ring"
           style={{ top: '50%', left: '50%' }}
         />
         <div
-          className="absolute w-[1000px] h-[1000px] rounded-full border border-gold/[0.04] animate-ring-2 pointer-events-none"
+          className="absolute w-[900px] h-[900px] rounded-full border border-gold/[0.07] animate-ring-2"
           style={{ top: '50%', left: '50%' }}
         />
-        <div
-          className="absolute w-[400px] h-[400px] rounded-full border border-gold/[0.08] animate-ring pointer-events-none"
-          style={{ top: '50%', left: '50%', animationDelay: '1s' }}
+        {/* third ring */}
+        <motion.div
+          animate={{ opacity: [0.03, 0.07, 0.03], scale: [1, 1.02, 1] }}
+          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
+          className="absolute w-[1200px] h-[1200px] rounded-full border border-gold"
+          style={{ top: '50%', left: '50%', transform: 'translate(-50%,-50%)' }}
         />
 
-        <div className="relative z-10 max-w-[1280px] mx-auto">
-          <motion.div
-            variants={fadeUp}
-            custom={0}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
+        <RevealSection className="relative z-10 max-w-[1280px] mx-auto">
+          <SectionLabel className="justify-center">Ready to grow?</SectionLabel>
+
+          {/* cinematic headline */}
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.9, ease: [0.23, 1, 0.32, 1] }}
+            className="font-cormorant font-light text-cta text-brand mb-6 max-w-4xl mx-auto"
           >
-            <SectionLabel className="justify-center">Ready to grow?</SectionLabel>
+            Let&apos;s build your<br />
+            <em className="italic text-gold">growth infrastructure.</em>
+          </motion.h2>
 
-            <h2 className="font-cormorant font-light text-cta text-brand mb-6 max-w-4xl mx-auto leading-[0.95]">
-              Let&apos;s build your<br />
-              <em className="italic text-gold">growth infrastructure.</em>
-            </h2>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.23, 1, 0.32, 1] }}
+            className="text-muted max-w-[500px] mx-auto mb-4 leading-[1.8] text-[1rem]"
+          >
+            The businesses in this portfolio all started with one decision — to stop improvising
+            and start building a system. Your next case study starts with a conversation.
+          </motion.p>
 
-            <p className="text-muted max-w-[520px] mx-auto mb-4 leading-[1.8] text-[1rem]">
-              Google Ads. High-converting websites. AI automation systems. Lead generation funnels.
-              All under one roof — strategy-led, data-backed, built to compound. International
-              clients welcome.
-            </p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            className="font-mono text-[0.65rem] tracking-[0.14em] uppercase text-gold/60 mb-14"
+          >
+            International clients welcome · Strategy call is always free · No pitch, no pressure
+          </motion.p>
 
-            <p className="font-mono text-[0.65rem] tracking-[0.14em] uppercase text-gold/60 mb-14">
-              Strategy call is free · No pitch · No pressure · Just honest growth advice
-            </p>
-
-            <div className="flex justify-center gap-6 flex-wrap mb-24">
-              <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
-                <BtnPrimary href="/contact">Book a Strategy Call →</BtnPrimary>
-              </motion.div>
-              <BtnGhost href="/contact">Discuss your project</BtnGhost>
-            </div>
-
-            {/* final micro trust strip */}
-            <div className="pt-12 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-8">
-              {[
-                { val: 'Top Rated',      sub: 'Upwork verified'          },
-                { val: '5.0 ★',         sub: 'Across all engagements'   },
-                { val: '12+ countries', sub: 'International experience'  },
-                { val: 'No lock-in',    sub: 'Rolling monthly contracts' },
-              ].map(({ val, sub }) => (
-                <div key={val} className="text-center">
-                  <p className="font-cormorant text-[1.05rem] font-normal text-brand mb-1">{val}</p>
-                  <p className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted">{sub}</p>
-                </div>
-              ))}
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className="flex justify-center gap-6 flex-wrap mb-24"
+          >
+            <BtnPrimary href="/contact">Book a Strategy Call →</BtnPrimary>
+            <BtnGhost href="/contact">Discuss your project</BtnGhost>
           </motion.div>
-        </div>
+
+          {/* final trust grid */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="pt-14 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            {[
+              { val: 'No retainer lock-in',   sub: 'Monthly rolling contracts'    },
+              { val: 'Results in 14 days',     sub: 'Systems go live fast'         },
+              { val: '12+ countries served',   sub: 'International experience'     },
+              { val: 'Full attribution stack', sub: 'You know exactly what works'  },
+            ].map(({ val, sub }) => (
+              <div key={val} className="text-center">
+                <p className="font-cormorant text-[1rem] font-normal text-brand mb-1">{val}</p>
+                <p className="font-mono text-[0.58rem] tracking-[0.12em] uppercase text-muted">{sub}</p>
+              </div>
+            ))}
+          </motion.div>
+        </RevealSection>
       </section>
 
       {/* ══════════════════════════════════════════════════════════
@@ -1256,10 +1319,12 @@ export default function WorkPage() {
           © 2025 Nexyra. All rights reserved.
         </p>
         <div className="flex gap-6">
-          {['LinkedIn', 'Instagram', 'Upwork', 'Contact'].map(s => (
+          {['LinkedIn', 'Upwork', 'Instagram', 'Contact'].map(s => (
             <a
               key={s}
               href={s === 'Upwork' ? 'https://www.upwork.com/freelancers/towhid' : s === 'Contact' ? '/contact' : '#'}
+              target={s === 'Upwork' ? '_blank' : undefined}
+              rel="noopener noreferrer"
               className="font-mono text-[0.65rem] tracking-[0.1em] uppercase text-muted no-underline hover:text-gold transition-colors"
             >
               {s}
